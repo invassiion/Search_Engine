@@ -1,4 +1,5 @@
 package searchengine.model;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -9,6 +10,7 @@ import javax.persistence.*;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class PageEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -30,11 +32,5 @@ public class PageEntity {
     @Column( columnDefinition = "MEDIUMTEXT", nullable = false)
     private String content;
 
-    public PageEntity(int id, String path, String content,int code)
-    {
-        this.id = id;
-        this.path = path;
-        this.content= content;
-        this.code = code;
-    }
+
 }
