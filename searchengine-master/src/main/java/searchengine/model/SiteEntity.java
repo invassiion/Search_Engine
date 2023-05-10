@@ -1,4 +1,5 @@
 package searchengine.model;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -10,6 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
 public class SiteEntity   {
 
     @Id
@@ -33,12 +35,5 @@ public class SiteEntity   {
     @Column( columnDefinition = "VARCHAR(255")
     private String last_error;
 
-    public SiteEntity(IndexedStatus status, String last_error, String url, String name,LocalDateTime status_time ){
-        this.status = status;
-        this.last_error = last_error;
-        this.url = url;
-        this.name = name;
-        this.status_time = status_time;
-    }
 
 }
