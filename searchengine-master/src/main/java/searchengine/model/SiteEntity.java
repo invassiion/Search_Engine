@@ -35,5 +35,5 @@ public class SiteEntity   {
 
     @Column( columnDefinition = "VARCHAR(255)")
     private String last_error;
-
+  
 }
