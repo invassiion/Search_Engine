@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class SiteEntity   {
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column( nullable = false)
