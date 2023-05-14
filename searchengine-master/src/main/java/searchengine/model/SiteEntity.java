@@ -14,26 +14,26 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class SiteEntity   {
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
     @Column( nullable = false)
     private int id;
 
-    @Column( nullable = false, columnDefinition = "VARCHAR(255")
+    @Column( nullable = false, columnDefinition = "VARCHAR(255)")
     private String name;
 
-    @Column( nullable = false, columnDefinition = "VARCHAR(255")
+    @Column( nullable = false, columnDefinition = "VARCHAR(255)")
     private String url;
 
     @Enumerated(EnumType.STRING)
     @Column( columnDefinition = "enum('INDEXING', 'INDEXED', 'FAILED')", nullable = false)
-   IndexedStatus status;
+     IndexedStatus status;
 
     @Column( nullable = false)
     private LocalDateTime status_time;
 
-    @Column( columnDefinition = "VARCHAR(255")
+    @Column( columnDefinition = "VARCHAR(255)")
     private String last_error;
-
-
+  
 }
