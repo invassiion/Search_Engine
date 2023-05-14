@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import javax.persistence.*;
+import java.util.List;
 
 @Entity
 @Table(name = "page")
@@ -12,6 +13,7 @@ import javax.persistence.*;
 @NoArgsConstructor
 @AllArgsConstructor
 public class PageEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id", nullable = false)
@@ -21,15 +23,17 @@ public class PageEntity {
     @JoinColumn(name = "site_id", nullable = false, insertable = false,updatable = false)
     private SiteEntity siteId;
 
-    @Column(name = "path", nullable = false, columnDefinition = "VARCHAR(255")
-    @PrimaryKeyJoinColumn(name ="path" ,columnDefinition = "VARCHAR 255")
+    @OneToMany(mappedBy = "page", cascade = CascadeType.REMOVE)
+    private List<searchengine.model.Indexx> indexxes;
+
+    @Column(columnDefinition = "TEXT NOT NULL, UNIQUE KEY pathIndex (path(512),site_id)")
     private String path;
 
 
-    @Column( nullable = false, columnDefinition = "VARCHAR(255")
+    @Column( nullable = false, columnDefinition = "VARCHAR(255)")
     private int code;
 
-    @Column( columnDefinition = "MEDIUMTEXT", nullable = false)
+    @Column( columnDefinition = "MEDIUMTEXT NOT NULL")
     private String content;
 
 
