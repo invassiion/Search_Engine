@@ -1,40 +1,34 @@
 package searchengine.model;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+
+
 import javax.persistence.*;
 import java.util.List;
 
 @Entity
-@Table(name = "page")
-@Getter
-@Setter
+@Table(name = "page",indexes = {@Index(name = "path_index",columnList = "path")})
+@Data
 @NoArgsConstructor
-@AllArgsConstructor
 public class PageEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "id", nullable = false)
+    @Column( nullable = false)
     private int id;
 
-    @ManyToOne(targetEntity = SiteEntity.class)
-    @JoinColumn(name = "site_id", nullable = false, insertable = false,updatable = false)
-    private SiteEntity siteId;
-
-    @OneToMany(mappedBy = "page", cascade = CascadeType.REMOVE)
-    private List<searchengine.model.Indexx> indexxes;
-
-    @Column(columnDefinition = "TEXT NOT NULL, UNIQUE KEY pathIndex (path(512),site_id)")
+    @Column(columnDefinition = "TEXT NOT NULL")
     private String path;
 
-
-    @Column( nullable = false, columnDefinition = "VARCHAR(255)")
+    @Column( nullable = false)
     private int code;
 
-    @Column( columnDefinition = "MEDIUMTEXT NOT NULL")
+    @Column( columnDefinition = "MEDIUMTEXT")
     private String content;
 
+    @Column(name = "site_id", nullable = false)
+    private int siteId;
 
+    @ManyToOne
+    @JoinColumn(name = "site_id", nullable = false, insertable = false,updatable = false)
+    private SiteEntity siteEntity;
 }

@@ -1,34 +1,33 @@
 package searchengine.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import javax.persistence.*;
 import java.util.List;
 
 @Entity
-@Table(name = "lemma")
-@AllArgsConstructor
+@Table(name = "lemma",uniqueConstraints = @UniqueConstraint(columnNames = "lemma"))
 @NoArgsConstructor
-@Getter
-@Setter
+@Data
 public class LemmaEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(nullable = false)
     private int id;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    private SiteEntity site;
 
     @Column(columnDefinition = "VARCHAR(255)", nullable = false)
     private String lemma;
 
     @Column(nullable = false)
-    private int frecuency;
+    private int frequency;
 
-    @OneToMany(mappedBy = "lemma" , cascade = CascadeType.REMOVE)
-    private List<Indexx> indexxes;
+    @Column(name = "site_id", nullable = false)
+    private int siteId;
+
+
+    @ManyToOne
+    @JoinColumn(name = "site_id",insertable = false,updatable = false,nullable = false)
+    private SiteEntity siteEntity;
+
 }
