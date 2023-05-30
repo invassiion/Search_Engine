@@ -1,24 +1,79 @@
 package searchengine.controllers;
 
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import searchengine.config.SitesList;
 import searchengine.dto.statistics.StatisticsResponse;
+import searchengine.repository.IndexxRepository;
+import searchengine.repository.LemmaRepository;
+import searchengine.repository.PageRepository;
+import searchengine.repository.SiteRepository;
+import searchengine.services.ApiService;
+import searchengine.services.LemmaService;
 import searchengine.services.StatisticsService;
+
+import java.io.IOException;
+import java.net.URL;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @RestController
 @RequestMapping("/api")
+@RequiredArgsConstructor
 public class ApiController {
-
-    private final StatisticsService statisticsService;
-
-    public ApiController(StatisticsService statisticsService) {
-        this.statisticsService = statisticsService;
-    }
+   private final StatisticsService statisticsService;
+    private final ApiService apiService;
+    private final LemmaService lemmaService;
+    private final AtomicBoolean indexingProcessing = new AtomicBoolean(false);
+    private final SitesList sitesList;
 
     @GetMapping("/statistics")
     public ResponseEntity<StatisticsResponse> statistics() {
         return ResponseEntity.ok(statisticsService.getStatistics());
+    }
+    @GetMapping("/startIndexing")
+    public ResponseEntity startIndexing() {
+        if(indexingProcessing.get()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("'result' : false, " +
+                    "'error' : Индексация уже запущена");
+        }
+        else
+        {
+            indexingProcessing.set(true);
+            Runnable start = () -> apiService.startIndexing(indexingProcessing);
+            new Thread(start).start();
+            return ResponseEntity.status(HttpStatus.OK).body("'result' : true");
+        }
+    }
+
+    @GetMapping("/stopIndexing")
+    public ResponseEntity stopIndexing() {
+        if (!indexingProcessing.get()) {
+            return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED).body("'result' : false, " +
+                    "'error' : Индексация не запущена");
+        }
+        else
+        {
+            indexingProcessing.set(false);
+            return ResponseEntity.status(HttpStatus.OK).body("'result' : true ");
+        }
+    }
+
+    @GetMapping("/indexPage")
+    public ResponseEntity indexPage(@RequestParam URL url) throws IOException {
+
+        try {
+            sitesList.getSites().stream().filter(site -> url.getHost().equals(site.getUrl().getHost())).findFirst().orElseThrow();
+        } catch (RuntimeException ex) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("result: false " +
+                    "error: страницы нет на сайте" );
+        }
+        lemmaService.getLemmasFromUrl(url);
+        return ResponseEntity.status(HttpStatus.OK).body("result: true");
     }
 }
