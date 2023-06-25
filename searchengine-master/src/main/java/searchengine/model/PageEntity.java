@@ -1,20 +1,21 @@
 package searchengine.model;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 
 import javax.persistence.*;
-import java.util.List;
 
 @Entity
-@Table(name = "page",indexes = {@Index(name = "path_index",columnList = "path")})
+@Table(name = "page",uniqueConstraints=@UniqueConstraint(columnNames={"site_id", "path"}))
 @Data
 @NoArgsConstructor
 public class PageEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column( nullable = false)
-    private int id;
+    @Column( unique = true,nullable = false)
+    private Integer id;
 
     @Column(columnDefinition = "TEXT NOT NULL")
     private String path;
@@ -22,13 +23,14 @@ public class PageEntity {
     @Column( nullable = false)
     private int code;
 
-    @Column( columnDefinition = "MEDIUMTEXT")
+    @Column( columnDefinition = "MEDIUMTEXT",nullable = false)
     private String content;
 
-    @Column(name = "site_id", nullable = false)
-    private int siteId;
+//    @Column(name = "site_id", nullable = false)
+//    private int siteId;
 
-    @ManyToOne
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    @ManyToOne(cascade = CascadeType.MERGE,fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id", nullable = false, insertable = false,updatable = false)
-    private SiteEntity siteEntity;
+    private SiteEntity siteId;
 }

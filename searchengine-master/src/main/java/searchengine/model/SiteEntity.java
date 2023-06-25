@@ -14,8 +14,8 @@ public class SiteEntity   {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column( nullable = false)
-    private int id;
+    @Column( unique = true ,nullable = false)
+    private Integer id;
 
     @Enumerated(EnumType.STRING)
     @Column( nullable = false)

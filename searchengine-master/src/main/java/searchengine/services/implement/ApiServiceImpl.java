@@ -14,12 +14,13 @@ import searchengine.config.SitesList;
 import searchengine.model.IndexedStatus;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
-import searchengine.repository.PageRepository;
-import searchengine.repository.SiteRepository;
+import searchengine.model.repository.PageRepository;
+import searchengine.model.repository.SiteRepository;
 import searchengine.services.ApiService;
 import searchengine.services.LemmaService;
 import searchengine.services.PageIndexer;
 
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -48,25 +49,15 @@ public class ApiServiceImpl implements ApiService {
     public void startIndexing(AtomicBoolean indexingProcessing) {
         this.indexingProcessing = indexingProcessing;
         try {
-            deleteSitePagesAndPagesInDB();
-            addSitePagesToDB();
+           deleteSiteEntitiesAndPagesInDB();
+            addSiteEntitiesToDB();
             indexAllSitePages();
         } catch (RuntimeException | InterruptedException ex) {
             logger.error("Error: ", ex);
         }
     }
 
-    private void deleteSitePagesAndPagesInDB() {
-        List<SiteEntity> sitesFromDB = siteRepository.findAll();
-        for (SiteEntity sitePageDb : sitesFromDB) {
-            for (Site siteApp : sitesToIndexing.getSites()) {
-                if (sitePageDb.getUrl().equals(siteApp.getUrl())) {
-                    siteRepository.deleteById(sitePageDb.getId());
-                }
-            }
-        }
-    }
-    private void addSitePagesToDB() {
+    private void addSiteEntitiesToDB() {
         for (Site siteApp : sitesToIndexing.getSites()) {
             SiteEntity siteEntityDAO = new SiteEntity();
             siteEntityDAO.setStatus(IndexedStatus.INDEXING);
@@ -118,4 +109,38 @@ public class ApiServiceImpl implements ApiService {
         }
         indexingProcessing.set(false);
     }
+
+    @Override
+    public void refreshPage(SiteEntity siteDomain, URL url) {
+        SiteEntity existSiteEntity = siteRepository.getSiteEntityByUrl(siteDomain.getUrl());
+        siteDomain.setId(existSiteEntity.getId());
+        ConcurrentHashMap<String, PageEntity> resultForkJoinPageIndexer = new ConcurrentHashMap<>();
+        try {
+            System.out.println("Запущена переиндексация " + url.getHost());
+            PageFinder f = new PageFinder(siteRepository, pageRepository, siteDomain, url.getPath(), resultForkJoinPageIndexer, connection, lemmaService, pageIndexer, indexingProcessing);
+            f.refreshPage();
+        } catch (SecurityException ex) {
+            SiteEntity siteEntity = siteRepository.findById(siteDomain.getId()).orElseThrow();
+            siteEntity.setStatus(IndexedStatus.FAILED);
+            siteEntity.setLastError(ex.getMessage());
+            siteRepository.save(siteEntity);
+        }
+
+        System.out.println("Проиндексирован сайт: " + siteDomain.getName());
+        SiteEntity siteEntity = siteRepository.findById(siteDomain.getId()).orElseThrow();
+        siteEntity.setStatus(IndexedStatus.INDEXED);
+        siteRepository.save(siteEntity);
+    }
+
+    private void deleteSiteEntitiesAndPagesInDB() {
+        List<SiteEntity> sitesFromDB = siteRepository.findAll();
+        for (SiteEntity siteEntityDB : sitesFromDB) {
+            for (Site siteApp : sitesToIndexing.getSites()) {
+                if (siteEntityDB.getUrl().equals(siteApp.getUrl())) {
+                    siteRepository.deleteById(siteEntityDB.getId());
+                }
+            }
+        }
+    }
+
 }
