@@ -45,8 +45,4 @@ public class SiteEntity   {
     private List<LemmaEntity> lemmas;
 
 
-    @Column( columnDefinition = "VARCHAR(255)")
-    private String last_error;
-  
-
 }
