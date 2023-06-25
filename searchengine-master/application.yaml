@@ -26,10 +26,6 @@ logging:
     org.springframework.web: DEBUG
     org.hibernate: ERROR
 
-      ddl-auto: create
-    show-sql: true
-
-
 indexing-settings:
   sites:
     - url: https://www.lenta.ru

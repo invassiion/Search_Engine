@@ -99,7 +99,7 @@ public class SearchService implements searchengine.services.SearchService {
             List<IndexEntity> indexEntities = indexxRepository.findByPagesAndLemmas(lemmaEntities, pageEntities);
             Map<PageEntity, IndexEntity> collect1 = new HashMap<>();
             for (IndexEntity indexEntity : indexEntities) {
-                collect1.put(indexEntity.getPageId(), indexEntity);
+                collect1.put(indexEntity.getPageEntity(), indexEntity);
             }
 
             for (LemmaEntity lemmaEntity : lemmaEntities) {
