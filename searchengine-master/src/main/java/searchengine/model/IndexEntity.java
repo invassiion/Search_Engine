@@ -18,23 +18,23 @@ public class IndexEntity implements Comparable<IndexEntity> {
     @Column(nullable = false)
     private Integer id;
 
-//    @Column(name = "page_id",nullable = false)
-//    private int pageId;
+    @Column(name = "page_id",nullable = false)
+    private int pageId;
 
-//    @Column(name = "lemma_id",nullable = false)
-//    private int lemmaId;
+    @Column(name = "lemma_id",nullable = false)
+    private int lemmaId;
 
     @Column(nullable = false)
     private float lemmaCount;
     @OnDelete(action = OnDeleteAction.CASCADE)
     @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
     @JoinColumn(name = "page_id",insertable = false,updatable = false,nullable = false)
-    private PageEntity pageId;
+    private PageEntity pageEntity;
 
     @OnDelete(action = OnDeleteAction.CASCADE)
     @ManyToOne(cascade = CascadeType.MERGE, fetch = FetchType.LAZY)
     @JoinColumn(name = "lemma_id",insertable = false,updatable = false,nullable = false)
-    private LemmaEntity lemmaId;
+    private LemmaEntity lemmaEntity;
 
     @Column(name ="rank", nullable = false)
     private float rank;
@@ -49,7 +49,7 @@ public class IndexEntity implements Comparable<IndexEntity> {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         IndexEntity that = (IndexEntity) o;
-        return lemmaId.equals(that.lemmaId) && pageId.equals(that.pageId);
+        return lemmaEntity.equals(that.lemmaEntity) && pageEntity.equals(that.pageEntity);
     }
 
     @Override

@@ -67,14 +67,13 @@ public class PageIndexerImpl implements PageIndexer {
             indexSearchExist.setLemmaCount(indexSearchExist.getLemmaCount() + rank);
             indexSearchRepository.save(indexSearchExist);
         } else {
-            indexingPage.getSiteId().getId();
-            lemmaInDB.getSiteId().getId();
+
             IndexEntity index = new IndexEntity();
-            index.setPageId(indexingPage);
-            index.setLemmaId(lemmaInDB);
+            index.setPageId(indexingPage.getId());
+            index.setLemmaId(lemmaInDB.getId());
             index.setLemmaCount(rank);
-            index.setLemmaId(lemmaInDB);
-            index.setPageId(indexingPage);
+            index.setLemmaId(lemmaInDB.getId());
+            index.setPageId(indexingPage.getId());
             indexSearchRepository.save(index);
         }
     }
