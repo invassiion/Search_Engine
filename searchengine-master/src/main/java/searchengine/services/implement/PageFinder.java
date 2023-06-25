@@ -5,12 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.select.Elements;
-import org.springframework.data.domain.Page;
 import searchengine.config.Connection;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
-import searchengine.repository.PageRepository;
-import searchengine.repository.SiteRepository;
+import searchengine.model.repository.PageRepository;
+import searchengine.model.repository.SiteRepository;
 import searchengine.services.LemmaService;
 import searchengine.services.PageIndexer;
 
@@ -55,11 +54,12 @@ public class PageFinder extends RecursiveAction {
         if (resultForkJoinPoolIndexedPages.get(page) != null || !indexingProcessing.get()) {
             return;
         }
+        siteDomain.getId();
         PageEntity indexingPage = new PageEntity();
         indexingPage.setPath(page);
-        indexingPage.setSiteId(siteDomain.getId());
-        //Если блочат подключение, используй ->
-        //Thread.sleep(1000);
+        indexingPage.setSiteId(siteDomain);
+      /*if connection is blocked use ->
+        Thread.sleep(1000); */
         try {
             org.jsoup.Connection connect = Jsoup.connect(siteDomain.getUrl() + page).userAgent(connection.getUserAgent()).referrer(connection.getReferer());
             Document doc = connect.timeout(60000).get();
@@ -79,23 +79,23 @@ public class PageFinder extends RecursiveAction {
             String message = ex.toString();
             int errorCode;
             if (message.contains("UnsupportedMimeTypeException")) {
-                errorCode = 415;    // Ссылка на pdf, jpg, png документы
+                errorCode = 415;
             } else if (message.contains("Status=401")) {
-                errorCode = 401;    // На несуществующий домен
+                errorCode = 401;
             } else if (message.contains("UnknownHostException")) {
                 errorCode = 401;
             } else if (message.contains("Status=403")) {
-                errorCode = 403;    // Нет доступа, 403 Forbidden
+                errorCode = 403;
             } else if (message.contains("Status=404")) {
-                errorCode = 404;    // // Ссылка на pdf-документ, несущ. страница, проигрыватель
+                errorCode = 404;
             } else if (message.contains("Status=500")) {
-                errorCode = 401;    // Страница авторизации
+                errorCode = 401;
             } else if (message.contains("ConnectException: Connection refused")) {
-                errorCode = 500;    // ERR_CONNECTION_REFUSED, не удаётся открыть страницу
+                errorCode = 500;
             } else if (message.contains("SSLHandshakeException")) {
                 errorCode = 525;
             } else if (message.contains("Status=503")) {
-                errorCode = 503; // Сервер временно не имеет возможности обрабатывать запросы по техническим причинам (обслуживание, перегрузка и прочее).
+                errorCode = 503;
             } else {
                 errorCode = -1;
             }
@@ -126,6 +126,57 @@ public class PageFinder extends RecursiveAction {
             page.join();
         }
 
+    }
+    public void refreshPage() {
+       siteDomain.getId();
+        PageEntity indexingPage = new PageEntity();
+        indexingPage.setPath(page);
+        indexingPage.setSiteId(siteDomain);
+        /*if connection is blocked use ->
+        Thread.sleep(1000); */
+        try {
+            org.jsoup.Connection connect = Jsoup.connect(siteDomain.getUrl() + page).userAgent(connection.getUserAgent()).referrer(connection.getReferer());
+            Document doc = connect.timeout(60000).get();
+
+            indexingPage.setContent(doc.head() + String.valueOf(doc.body()));
+            indexingPage.setCode(doc.connection().response().statusCode());
+        } catch (Exception ex) {
+            String message = ex.toString();
+            int errorCode;
+            if (message.contains("UnsupportedMimeTypeException")) {
+                errorCode = 415;
+            } else if (message.contains("Status=401")) {
+                errorCode = 401;
+            } else if (message.contains("UnknownHostException")) {
+                errorCode = 401;
+            } else if (message.contains("Status=403")) {
+                errorCode = 403;
+            } else if (message.contains("Status=404")) {
+                errorCode = 404;
+            } else if (message.contains("Status=500")) {
+                errorCode = 401;
+            } else if (message.contains("ConnectException: Connection refused")) {
+                errorCode = 500;
+            } else if (message.contains("SSLHandshakeException")) {
+                errorCode = 525;
+            } else if (message.contains("Status=503")) {
+                errorCode = 503;
+            } else {
+                errorCode = -1;
+            }
+            indexingPage.setCode(errorCode);
+            return;
+        }
+        SiteEntity siteEntity = siteRepository.findById(siteDomain.getId()).orElseThrow();
+        siteEntity.setStatusTime(Timestamp.valueOf(LocalDateTime.now()));
+        siteRepository.save(siteEntity);
+
+        PageEntity pageForRefresh = pageRepository.findPageBySiteIdAndPath(page,siteEntity.getId());
+        pageForRefresh.setCode(indexingPage.getCode());
+        pageForRefresh.setContent(indexingPage.getContent());
+        pageRepository.save(pageForRefresh);
+
+        pageIndexer.refreshIndex(indexingPage.getContent(), pageForRefresh);
     }
 
 }

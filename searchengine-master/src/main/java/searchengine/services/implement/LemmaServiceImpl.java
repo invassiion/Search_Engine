@@ -1,6 +1,8 @@
 package searchengine.services.implement;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.Marker;
+import org.apache.logging.log4j.MarkerManager;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 import org.jsoup.Jsoup;
@@ -15,7 +17,7 @@ import java.util.*;
 @Service
 @Slf4j
 public class LemmaServiceImpl implements LemmaService {
-
+    private final static Marker SIMBOL_MARKER = MarkerManager.getMarker("INVALID_SYMBOL");
     @Override
     public Map<String, Integer> getLemmasFromText(String html) throws IOException {
         Map<String, Integer> lemmasInText = new HashMap<>();
@@ -57,4 +59,54 @@ public class LemmaServiceImpl implements LemmaService {
         System.out.println(res.keySet());
         System.out.println(res.values());
     }
+    @Override
+    public List<String> getLemma(String word) throws IOException {
+        LuceneMorphology luceneMorph = new RussianLuceneMorphology();
+        List<String> lemmaList = new ArrayList<>();
+        try {
+            List<String> baseRusForm = luceneMorph.getNormalForms(word);
+            if (!isServiceWord(word)) {
+                lemmaList.addAll(baseRusForm);
+            }
+        } catch (Exception e) {
+            log.debug( SIMBOL_MARKER+ "Символ не найден - " + word);
+        }
+        return lemmaList;
+    }
+
+    @Override
+    public List<Integer> findLemmaIndexInText(String content, String lemma) throws IOException {
+        List<Integer> lemmaIndexList = new ArrayList<>();
+        String[] elements = content.toLowerCase(Locale.ROOT).split("\\p{Punct}|\\s");
+        int index = 0;
+        for (String el : elements) {
+            String s = el.replaceAll("\\p{Punct}|[0-9]|@|©|◄|»|«|—|-|№|…", "");
+            List<String> lemmas = getLemma(s);
+            for (String lem : lemmas) {
+                if (lem.equals(lemma)) {
+                    lemmaIndexList.add(index);
+                }
+            }
+            index += el.length() + 1;
+        }
+        return lemmaIndexList;
+
+    }
+
+    private boolean isServiceWord(String word) throws IOException {
+        LuceneMorphology luceneMorph = new RussianLuceneMorphology();
+        List<String> morphForm = luceneMorph.getMorphInfo(word);
+        for (String l : morphForm) {
+            if (l.contains("ПРЕДЛ")
+                    || l.contains("СОЮЗ")
+                    || l.contains("МЕЖД")
+                    || l.contains("МС")
+                    || l.contains("ЧАСТ")
+                    || l.length() <= 3) {
+                return true;
+            }
+        }
+        return false;
+    }
+
 }

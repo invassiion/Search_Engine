@@ -1,13 +1,12 @@
 package searchengine.config;
 
-import lombok.Getter;
-import lombok.Setter;
+import lombok.Data;
+
 
 import java.net.URL;
 
 
-@Setter
-@Getter
+@Data
 public class Site {
     private URL url;
     private String name;

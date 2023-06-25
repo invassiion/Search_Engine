@@ -1,25 +1,27 @@
 package searchengine.controllers;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import searchengine.config.SearchCfg;
 import searchengine.config.SitesList;
-import searchengine.dto.statistics.StatisticsResponse;
-import searchengine.repository.IndexxRepository;
-import searchengine.repository.LemmaRepository;
-import searchengine.repository.PageRepository;
-import searchengine.repository.SiteRepository;
+import searchengine.dto.response.ErrorResponse;
+import searchengine.dto.response.SearchResponse;
+import searchengine.dto.statistics.SearchDto;
+import searchengine.dto.response.StatisticsResponse;
+import searchengine.model.SiteEntity;
 import searchengine.services.ApiService;
 import searchengine.services.LemmaService;
+import searchengine.services.SearchService;
 import searchengine.services.StatisticsService;
 
 import java.io.IOException;
 import java.net.URL;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @RestController
@@ -31,6 +33,7 @@ public class ApiController {
     private final LemmaService lemmaService;
     private final AtomicBoolean indexingProcessing = new AtomicBoolean(false);
     private final SitesList sitesList;
+    private final SearchService searchService;
 
     @GetMapping("/statistics")
     public ResponseEntity<StatisticsResponse> statistics() {
@@ -65,15 +68,32 @@ public class ApiController {
     }
 
     @GetMapping("/indexPage")
-    public ResponseEntity indexPage(@RequestParam URL url) throws IOException {
-
+    public ResponseEntity indexPage(@RequestParam String refUrl) throws IOException {
+        URL url = new URL(refUrl);
+        SiteEntity siteEntity = new SiteEntity();
         try {
-            sitesList.getSites().stream().filter(site -> url.getHost().equals(site.getUrl().getHost())).findFirst().orElseThrow();
+            sitesList.getSites().stream().filter(site -> url.getHost().equals(site.getUrl().getHost())).findFirst().map(site -> {
+                siteEntity.setName(site.getName());
+                siteEntity.setUrl(site.getUrl().toString());
+                return siteEntity;
+            }).orElseThrow();
         } catch (RuntimeException ex) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("result: false " +
-                    "error: страницы нет на сайте" );
+                    "error: Данная страница находится за пределами сайтов " +
+                    "указанных в конфигурационном файле");
         }
-        lemmaService.getLemmasFromUrl(url);
-        return ResponseEntity.status(HttpStatus.OK).body("result: true");
+        apiService.refreshPage(siteEntity, url);
+        return ResponseEntity.status(HttpStatus.OK).body("'result' : true ");
     }
+
+    @GetMapping("/search")
+    public ResponseEntity<?> search(SearchCfg site) {
+        List<SearchDto> listSearchDto = site.getSite() == null ?
+                searchService.allSiteSearch(site) :
+                searchService.siteSearch(site);
+        return ResponseEntity.ok(listSearchDto.isEmpty() ?
+                new ErrorResponse(false, "Поисковый запрос не найден или введен не верно") :
+                new SearchResponse(true,listSearchDto.size(),listSearchDto));
+    }
+
 }

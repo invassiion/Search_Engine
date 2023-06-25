@@ -12,10 +12,12 @@ import java.util.List;
 @NoArgsConstructor
 public class SiteEntity   {
 
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column( nullable = false)
-    private int id;
+    @Column( unique = true ,nullable = false)
+    private Integer id;
+
 
     @Enumerated(EnumType.STRING)
     @Column( nullable = false)
@@ -27,11 +29,12 @@ public class SiteEntity   {
     @Column(name = "last_error")
     private String lastError = null;
 
-    @Column(columnDefinition = "VARCHAR(255)", nullable = false)
+    @Column( nullable = false, columnDefinition = "VARCHAR(255)")
+    private String name;
+
+    @Column( nullable = false, columnDefinition = "VARCHAR(255)")
     private String url;
 
-    @Column(columnDefinition = "VARCHAR(255)", nullable = false)
-    private String name;
 
     @OneToMany(cascade = CascadeType.ALL)
     @JoinColumn(name = "site_id")
@@ -40,5 +43,10 @@ public class SiteEntity   {
     @OneToMany
     @JoinColumn(name = "site_id")
     private List<LemmaEntity> lemmas;
+
+
+    @Column( columnDefinition = "VARCHAR(255)")
+    private String last_error;
+  
 
 }

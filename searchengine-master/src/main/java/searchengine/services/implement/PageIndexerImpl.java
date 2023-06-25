@@ -5,11 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import searchengine.model.IndexxSearch;
+import searchengine.model.IndexEntity;
 import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
-import searchengine.repository.IndexxRepository;
-import searchengine.repository.LemmaRepository;
+import searchengine.model.repository.IndexxRepository;
+import searchengine.model.repository.LemmaRepository;
 import searchengine.services.LemmaService;
 import searchengine.services.PageIndexer;
 
@@ -51,7 +51,7 @@ public class PageIndexerImpl implements PageIndexer {
                 newLemmaToDB.setSiteId(indexingPage.getSiteId());
                 newLemmaToDB.setLemma(k);
                 newLemmaToDB.setFrequency(v);
-                newLemmaToDB.setSiteEntity(indexingPage.getSiteEntity());
+                newLemmaToDB.setSiteId(indexingPage.getSiteId());
                 lemmaRepository.saveAndFlush(newLemmaToDB);
                 createIndex(indexingPage, newLemmaToDB, v);
             } catch (DataIntegrityViolationException ex) {
@@ -62,18 +62,59 @@ public class PageIndexerImpl implements PageIndexer {
     }
 
     private void createIndex(PageEntity indexingPage, LemmaEntity lemmaInDB, Integer rank) {
-        IndexxSearch indexSearchExist = indexSearchRepository.indexSearchExist(indexingPage.getId(), lemmaInDB.getId());
+        IndexEntity indexSearchExist = indexSearchRepository.indexSearchExist(indexingPage.getId(), lemmaInDB.getId());
         if (indexSearchExist != null) {
             indexSearchExist.setLemmaCount(indexSearchExist.getLemmaCount() + rank);
             indexSearchRepository.save(indexSearchExist);
         } else {
-            IndexxSearch index = new IndexxSearch();
-            index.setPageId(indexingPage.getId());
-            index.setLemmaId(lemmaInDB.getId());
+            indexingPage.getSiteId().getId();
+            lemmaInDB.getSiteId().getId();
+            IndexEntity index = new IndexEntity();
+            index.setPageId(indexingPage);
+            index.setLemmaId(lemmaInDB);
             index.setLemmaCount(rank);
-            index.setLemma(lemmaInDB);
-            index.setPage(indexingPage);
+            index.setLemmaId(lemmaInDB);
+            index.setPageId(indexingPage);
             indexSearchRepository.save(index);
+        }
+    }
+    @Transactional
+    private void refreshLemma(String k, Integer v, PageEntity refreshPage) {
+        LemmaEntity existLemmaInDB = lemmaRepository.lemmaExist(k);
+        if (existLemmaInDB != null) {
+            IndexEntity indexForRefresh = indexSearchRepository.indexSearchExist(refreshPage.getId(), existLemmaInDB.getId());
+            if (indexForRefresh != null) {
+                existLemmaInDB.setFrequency((int) (existLemmaInDB.getFrequency() - indexForRefresh.getLemmaCount()));
+                lemmaRepository.saveAndFlush(existLemmaInDB);
+                indexSearchRepository.delete(indexForRefresh);
+                LemmaEntity newLemmaToDB = new LemmaEntity();
+                newLemmaToDB.setSiteId(refreshPage.getSiteId());
+                newLemmaToDB.setLemma(k);
+                newLemmaToDB.setFrequency(v);
+                newLemmaToDB.setSiteId(refreshPage.getSiteId());
+                lemmaRepository.saveAndFlush(newLemmaToDB);
+                createIndex(refreshPage, newLemmaToDB, v);
+                return;
+            }
+        }
+        LemmaEntity newLemmaToDB = new LemmaEntity();
+        newLemmaToDB.setSiteId(refreshPage.getSiteId());
+        newLemmaToDB.setLemma(k);
+        newLemmaToDB.setFrequency(v);
+        newLemmaToDB.setSiteId(refreshPage.getSiteId());
+        lemmaRepository.saveAndFlush(newLemmaToDB);
+        createIndex(refreshPage, newLemmaToDB, v);
+    }
+    @Override
+    public void refreshIndex(String html, PageEntity refreshPage) {
+        long start = System.currentTimeMillis();
+        try {
+            Map<String, Integer> lemmas = lemmaService.getLemmasFromText(html);
+            lemmas.entrySet().parallelStream().forEach(entry -> refreshLemma(entry.getKey(), entry.getValue(), refreshPage));
+            log.warn("Обновление индекса страницы " + (System.currentTimeMillis() - start) + " lemmas:" + lemmas.size());
+        } catch (IOException e) {
+            log.error(String.valueOf(e));
+            throw new RuntimeException(e);
         }
     }
 
