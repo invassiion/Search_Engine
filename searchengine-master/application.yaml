@@ -7,12 +7,16 @@ spring:
     username: root
     password: logout11@#$
 
+
     connectionProperties: useUnicode=true;characterEncoding=utf-8
+
+
   jpa:
     properties:
        hibernate:
           dialect: org.hibernate.dialect.MySQL8Dialect
     hibernate:
+
       ddl-auto: update
     show-sql: true
 
@@ -21,6 +25,11 @@ logging:
     root: INFO
     org.springframework.web: DEBUG
     org.hibernate: ERROR
+
+      ddl-auto: create
+    show-sql: true
+
+
 indexing-settings:
   sites:
     - url: https://www.lenta.ru
